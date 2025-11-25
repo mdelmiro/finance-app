@@ -1,10 +1,20 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, InviteCode } = require('../models');
 
 const register = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, inviteCode } = req.body;
+
+        // Validate Invite Code
+        if (!inviteCode) {
+            return res.status(400).json({ message: 'Código de convite é obrigatório.' });
+        }
+
+        const validCode = await InviteCode.findOne({ where: { code: inviteCode, isUsed: false } });
+        if (!validCode) {
+            return res.status(400).json({ message: 'Código de convite inválido ou já utilizado.' });
+        }
 
         // Check if user exists
         const existingUser = await User.findOne({ where: { email } });
@@ -22,6 +32,11 @@ const register = async (req, res) => {
             email,
             password: hashedPassword,
         });
+
+        // Mark code as used
+        validCode.isUsed = true;
+        validCode.usedBy = user.id;
+        await validCode.save();
 
         // Generate Token
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'dev_secret', {

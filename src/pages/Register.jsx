@@ -8,6 +8,7 @@ const Register = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [inviteCode, setInviteCode] = useState('');
     const [error, setError] = useState('');
     const { register } = useFinance();
     const navigate = useNavigate();
@@ -21,7 +22,7 @@ const Register = () => {
             return;
         }
 
-        const result = await register(name, email, password);
+        const result = await register(name, email, password, inviteCode);
 
         if (result.success) {
             navigate('/');
@@ -111,6 +112,21 @@ const Register = () => {
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
                                 placeholder="••••••••"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="label">Código de Convite</label>
+                        <div className="input-wrapper">
+                            <Lock size={20} className="input-icon" />
+                            <input
+                                type="text"
+                                className="input with-icon"
+                                value={inviteCode}
+                                onChange={(e) => setInviteCode(e.target.value)}
+                                required
+                                placeholder="Código de convite"
                             />
                         </div>
                     </div>

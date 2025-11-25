@@ -5,7 +5,7 @@ const FinanceContext = createContext();
 
 export const useFinance = () => useContext(FinanceContext);
 
-const API_URL = 'http://localhost:3002/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.15.55:3001/api';
 
 export const FinanceProvider = ({ children }) => {
   // Persona: 'personal' | 'solyze'
@@ -56,12 +56,12 @@ export const FinanceProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password) => {
+  const register = async (name, email, password, inviteCode) => {
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, inviteCode }),
       });
       const data = await response.json();
 
