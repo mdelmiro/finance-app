@@ -17,9 +17,11 @@ const path = require('path');
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
+const apiKeyRoutes = require('./routes/apiKeyRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/keys', apiKeyRoutes);
 
 console.log('Auth routes registered at /api/auth');
 console.log('Transaction routes registered at /api/transactions');
@@ -50,7 +52,8 @@ app.listen(PORT, async () => {
     await connectDB();
 
     // Sync models (create tables)
-    // alter: true updates the schema without dropping tables
-    await sequelize.sync({ alter: true });
+    // Sync models (create tables)
+    // Removed alter: true to avoid ER_TOO_MANY_KEYS on Users table
+    await sequelize.sync();
     console.log('Database synced successfully.');
 });

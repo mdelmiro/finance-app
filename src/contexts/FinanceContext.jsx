@@ -506,6 +506,47 @@ export const FinanceProvider = ({ children }) => {
         getExpense,
         getProjections,
         getAlerts,
+        createApiKey: async (name) => {
+          try {
+            const response = await fetch(`${API_URL}/keys`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ name })
+            });
+            if (response.ok) return await response.json();
+            throw new Error('Erro ao criar chave.');
+          } catch (error) {
+            console.error(error);
+            return null;
+          }
+        },
+        getApiKeys: async () => {
+          try {
+            const response = await fetch(`${API_URL}/keys`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) return await response.json();
+            return [];
+          } catch (error) {
+            console.error(error);
+            return [];
+          }
+        },
+        deleteApiKey: async (id) => {
+          try {
+            await fetch(`${API_URL}/keys/${id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return true;
+          } catch (error) {
+            console.error(error);
+            return false;
+          }
+        }
       }}
     >
       {children}

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFinance } from '../contexts/FinanceContext';
-import { User, Moon, Sun, Zap, Plus, Trash2, Save } from 'lucide-react';
+import { User, Moon, Sun, Zap, Plus, Trash2, Save, Key, Copy } from 'lucide-react';
 
 const Settings = () => {
-    const { user, theme, setTheme, categories, addCategory, deleteCategory } = useFinance();
+    const { user, theme, setTheme, categories, addCategory, deleteCategory, createApiKey, getApiKeys, deleteApiKey } = useFinance();
 
     // Profile State
     const [profileData, setProfileData] = useState({
@@ -13,6 +13,37 @@ const Settings = () => {
 
     // Category State
     const [newCategory, setNewCategory] = useState({ name: '', type: 'expense' });
+
+    // API Keys State
+    const [apiKeys, setApiKeys] = useState([]);
+    const [newKeyName, setNewKeyName] = useState('');
+    const [createdKey, setCreatedKey] = useState(null);
+
+    useEffect(() => {
+        loadKeys();
+    }, []);
+
+    const loadKeys = async () => {
+        const keys = await getApiKeys();
+        setApiKeys(keys);
+    };
+
+    const handleCreateKey = async () => {
+        if (!newKeyName) return;
+        const keyData = await createApiKey(newKeyName);
+        if (keyData) {
+            setCreatedKey(keyData.key); // Show the raw key once
+            setNewKeyName('');
+            loadKeys();
+        }
+    };
+
+    const handleDeleteKey = async (id) => {
+        if (window.confirm('Tem certeza que deseja revogar esta chave?')) {
+            await deleteApiKey(id);
+            loadKeys();
+        }
+    };
 
     const handleProfileUpdate = (e) => {
         e.preventDefault();
@@ -131,22 +162,104 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* Integrations Section (Placeholder) */}
+                {/* Integrations Section */}
                 <div className="card">
                     <div className="card-header">
-                        <h2 className="card-title">Integrações</h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <Key size={20} className="text-accent-primary" />
+                            <h2 className="card-title">API Pública (Integrações)</h2>
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div className="form-group">
-                            <label className="label">Webhook n8n (URL)</label>
-                            <input type="text" className="input" placeholder="https://..." disabled />
-                            <small className="text-secondary">Disponível na versão Pro</small>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <p className="text-secondary" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+                            Use chaves de API para conectar o Finance App com n8n, Zapier ou outros sistemas.
+                            <br />
+                            <strong>Atenção:</strong> As chaves têm acesso total à sua conta.
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="Nome da integração (ex: n8n)"
+                                value={newKeyName}
+                                onChange={(e) => setNewKeyName(e.target.value)}
+                            />
+                            <button className="btn btn-primary" onClick={handleCreateKey} disabled={!newKeyName}>
+                                <Plus size={18} />
+                                Gerar Chave
+                            </button>
                         </div>
-                        <div className="form-group">
-                            <label className="label">Google Sheets ID</label>
-                            <input type="text" className="input" placeholder="Spreadsheet ID" disabled />
-                            <small className="text-secondary">Disponível na versão Pro</small>
-                        </div>
+
+                        {createdKey && (
+                            <div style={{
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                border: '1px solid var(--success)',
+                                padding: '1rem',
+                                borderRadius: '0.5rem',
+                                marginBottom: '1.5rem'
+                            }}>
+                                <p style={{ color: 'var(--success)', fontWeight: 'bold', marginBottom: '0.5rem' }}>Chave Gerada com Sucesso!</p>
+                                <p style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Copie agora, você não verá isso novamente.</p>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <code style={{
+                                        background: 'var(--bg-secondary)',
+                                        padding: '0.5rem',
+                                        borderRadius: '0.25rem',
+                                        flex: 1,
+                                        fontFamily: 'monospace'
+                                    }}>
+                                        {createdKey}
+                                    </code>
+                                    <button className="btn btn-outline" onClick={() => {
+                                        navigator.clipboard.writeText(createdKey);
+                                        alert('Copiado!');
+                                    }}>
+                                        <Copy size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="table-container">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Criado em</th>
+                                    <th>Último Uso</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {apiKeys.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                            Nenhuma chave ativa.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    apiKeys.map(key => (
+                                        <tr key={key.id}>
+                                            <td>{key.name}</td>
+                                            <td>{new Date(key.createdAt).toLocaleDateString()}</td>
+                                            <td>{key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : '-'}</td>
+                                            <td>
+                                                <button
+                                                    className="btn-danger"
+                                                    style={{ padding: '0.25rem' }}
+                                                    onClick={() => handleDeleteKey(key.id)}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
