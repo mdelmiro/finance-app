@@ -28,11 +28,39 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '20px', color: 'red' }}>
-          <h1>Something went wrong.</h1>
-          <details style={{ whiteSpace: 'pre-wrap' }}>
+        <div style={{
+          padding: '40px',
+          color: '#ef4444',
+          backgroundColor: '#18181b',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: 'sans-serif'
+        }}>
+          <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Algo deu errado.</h1>
+          <p style={{ color: '#a1a1aa', marginBottom: '24px' }}>
             {this.state.error && this.state.error.toString()}
-            <br />
+          </p>
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+            style={{
+              backgroundColor: '#fff',
+              color: '#000',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Limpar Dados e Recarregar
+          </button>
+          <details style={{ whiteSpace: 'pre-wrap', marginTop: '32px', color: '#52525b', fontSize: '12px' }}>
             {this.state.errorInfo && this.state.errorInfo.componentStack}
           </details>
         </div>
