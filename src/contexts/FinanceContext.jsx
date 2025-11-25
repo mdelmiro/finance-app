@@ -16,7 +16,13 @@ export const FinanceProvider = ({ children }) => {
   // Auth
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('finance_user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      console.error('Error parsing user from localStorage:', e);
+      localStorage.removeItem('finance_user');
+      return null;
+    }
   });
 
   const [token, setToken] = useState(() => {
