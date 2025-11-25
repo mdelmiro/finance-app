@@ -88,6 +88,8 @@ const Login = () => {
                     <Link to="/register" className="link-primary">
                         Crie agora
                     </Link>
+                    <br />
+                    <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>v1.0 (Auto-Deploy)</span>
                 </div>
             </div>
         </div>
