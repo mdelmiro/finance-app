@@ -16,6 +16,13 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ error, errorInfo });
     console.error("Uncaught error:", error, errorInfo);
+
+    // Auto-fix for "The string did not match the expected pattern" (corrupted localStorage)
+    if (error.message && error.message.includes("The string did not match the expected pattern")) {
+      console.warn("Detected corrupted localStorage. Clearing and reloading...");
+      localStorage.clear();
+      window.location.reload();
+    }
   }
 
   render() {
