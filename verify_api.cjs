@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const API_URL = 'http://localhost:3002/api';
+const API_URL = 'https://finance-app-f6sp.onrender.com/api';
 
 async function testApiKey() {
     try {

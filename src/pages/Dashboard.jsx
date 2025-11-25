@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useFinance } from '../contexts/FinanceContext';
-import { format } from 'date-fns';
+import { format, subMonths, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUp, ArrowDown, DollarSign, CreditCard, Wallet, TrendingUp, Edit2 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { CreditCard, Wallet, TrendingUp, Edit2 } from 'lucide-react';
 
 import AlertsCenter from '../components/AlertsCenter';
 import EditTransactionModal from '../components/EditTransactionModal';
+import SummaryCards from '../components/SummaryCards';
+import CategoryPieChart from '../components/charts/CategoryPieChart';
+import FinancialBarChart from '../components/charts/FinancialBarChart';
 
 const Dashboard = () => {
-    const { getBalance, getIncome, getExpense, transactions, accounts, persona, getProjections } = useFinance();
+    const { getBalance, transactions, accounts, persona, getProjections } = useFinance();
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -43,7 +45,9 @@ const Dashboard = () => {
         .filter(t => t.type === 'expense')
         .reduce((acc, t) => acc + Number(t.value), 0);
 
-    // Prepare data for charts
+    const filteredSavings = filteredIncome - filteredExpense;
+
+    // Prepare data for Pie Chart (Expenses by Category)
     const expenseCategories = filteredTransactions
         .filter(t => t.type === 'expense')
         .reduce((acc, t) => {
@@ -56,12 +60,37 @@ const Dashboard = () => {
         value: expenseCategories[key]
     }));
 
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+    // Prepare data for Bar Chart (Last 6 Months)
+    const getLast6MonthsData = () => {
+        const data = [];
+        for (let i = 5; i >= 0; i--) {
+            const date = subMonths(new Date(), i);
+            const monthName = format(date, 'MMM', { locale: ptBR });
 
-    const barData = [
-        { name: 'Entradas', valor: filteredIncome },
-        { name: 'Saídas', valor: filteredExpense },
-    ];
+            // Filter transactions for this specific month (ignoring the global date filter for this chart)
+            const monthTransactions = transactions.filter(t =>
+                isSameMonth(new Date(t.createdAt), date) &&
+                (persona === 'all' || t.persona === persona)
+            );
+
+            const receita = monthTransactions
+                .filter(t => t.type === 'income')
+                .reduce((acc, t) => acc + Number(t.value), 0);
+
+            const despesa = monthTransactions
+                .filter(t => t.type === 'expense')
+                .reduce((acc, t) => acc + Number(t.value), 0);
+
+            data.push({
+                name: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+                receita,
+                despesa
+            });
+        }
+        return data;
+    };
+
+    const barData = getLast6MonthsData();
 
     const handleEdit = (transaction) => {
         setEditingTransaction(transaction);
@@ -104,35 +133,28 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <div className="grid-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            {/* New Summary Cards */}
+            <SummaryCards
+                balance={getBalance()}
+                income={filteredIncome}
+                expense={filteredExpense}
+                savings={filteredSavings}
+            />
+
+            {/* Charts Section */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
                 <div className="card">
                     <div className="card-header">
-                        <span className="card-title">Saldo Total (Atual)</span>
-                        <DollarSign className="text-accent-primary" />
+                        <h2 className="card-title">Despesas por Categoria</h2>
                     </div>
-                    <div className="card-value" style={{ color: getBalance() >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                        {formatCurrency(getBalance())}
-                    </div>
+                    <CategoryPieChart data={pieData} />
                 </div>
 
                 <div className="card">
                     <div className="card-header">
-                        <span className="card-title">Entradas (Período)</span>
-                        <ArrowUp className="text-success" />
+                        <h2 className="card-title">Histórico (6 Meses)</h2>
                     </div>
-                    <div className="card-value text-success">
-                        {formatCurrency(filteredIncome)}
-                    </div>
-                </div>
-
-                <div className="card">
-                    <div className="card-header">
-                        <span className="card-title">Saídas (Período)</span>
-                        <ArrowDown className="text-danger" />
-                    </div>
-                    <div className="card-value text-danger">
-                        {formatCurrency(filteredExpense)}
-                    </div>
+                    <FinancialBarChart data={barData} />
                 </div>
             </div>
 
@@ -163,52 +185,6 @@ const Dashboard = () => {
                 </div>
                 <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                     * Baseado na média de entradas dos últimos 30 dias e despesas recorrentes (assinaturas).
-                </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
-                <div className="card">
-                    <div className="card-header">
-                        <h2 className="card-title">Despesas por Categoria</h2>
-                    </div>
-                    <div style={{ height: '300px' }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={pieData}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                >
-                                    {pieData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip formatter={(value) => formatCurrency(value)} />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className="card">
-                    <div className="card-header">
-                        <h2 className="card-title">Entradas vs Saídas</h2>
-                    </div>
-                    <div style={{ height: '300px' }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={barData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                                <XAxis dataKey="name" stroke="var(--text-secondary)" />
-                                <YAxis stroke="var(--text-secondary)" />
-                                <Tooltip formatter={(value) => formatCurrency(value)} cursor={{ fill: 'transparent' }} />
-                                <Bar dataKey="valor" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
                 </div>
             </div>
 
