@@ -26,6 +26,7 @@ const apiKeyRoutes = require('./routes/apiKeyRoutes');
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/keys', apiKeyRoutes);
+app.use('/api/debug', require('./routes/debugRoutes'));
 
 console.log('Auth routes registered at /api/auth');
 console.log('Transaction routes registered at /api/transactions');
